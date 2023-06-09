@@ -7,39 +7,50 @@ if (!empty($_POST) && !empty($_POST['mail']) && !empty($_POST['password']))
     require_once 'include/db.php'; 
     // Inclut le fichier contenant la connexion à la base de données
 
-    //$req = $pdo->prepare('SELECT * FROM user WHERE email = ?'); 
-    
-    $req = $pdo->prepare("SELECT `user`.*,`role`.`nom` AS 'role'
-    FROM `user` 
-        LEFT JOIN `user_has_role` ON `user_has_role`.`user_id` = `user`.`id` 
-        LEFT JOIN `role` ON `user_has_role`.`role_id` = `role`.`id`
-    WHERE `user`.`mail` = ?");
-    // Prépare une requête pour récupérer les données utilisateur en fonction de l'email
-    $req->execute([$_POST['mail']]); 
-    // Exécute la requête en utilisant l'email fourni dans le formulaire
-    $user = $req->fetch(); 
-    // Récupère la première ligne de résultat
+    $req = $pdo->prepare("SELECT `user`.* FROM `user` WHERE `user`.`mail` = ?");
+    $req->execute([$_POST['mail']]);
+    $user = $req->fetch();
+   
 
     if ($user) {
+        $reqRoles = $pdo->prepare("SELECT `role`.`nom` AS 'role'
+        FROM `user_has_role`
+        LEFT JOIN `role` ON `user_has_role`.`role_id` = `role`.`id`
+        WHERE `user_has_role`.`user_id` = ?");
+        $reqRoles->execute([$user->id]);
+        $roles = $reqRoles->fetchAll(PDO::FETCH_COLUMN);
+
         if (password_verify($_POST['password'], $user->mp)) { 
             // Vérifie si le mot de passe fourni correspond au mot de passe haché stocké en base de données
-            $_SESSION['auth'] = $user; 
-            // Stocke les informations utilisateur dans la variable de session
-            $_SESSION['flash']['success'] = "Vous êtes bien connecté"; 
-            // Stocke un message de succès dans la variable de session
-            if($user->role == "ADMIN") {
-                header('Location: vueProfil/profil.php'); 
-            }else {
-                $_SESSION['flash']['danger'] = "vous n'avez pas les droits d'accés";
-                header("Refresh:0"); 
-            
-            }
            
-            // Redirige l'utilisateur vers la page de profil
-            exit(); // Arrête l'exécution du script
-        } else { 
-            $_SESSION['flash']['danger'] = "Identifiant ou mot de passe incorrect"; 
-            // Stocke un message d'erreur dans la variable de session
-        }
+            
+            if(in_array('ADMIN', $roles)) {
+                 // Utilisateur a le rôle ADMIN
+                 $_SESSION['admin'] = $user;
+                $_SESSION['flash']['success'] = 'Vous êtes maintenant connecté en tant qu\'administrateur';
+                  header('Location: vueProfil/admin.php'); 
+                  exit();
+            }elseif(in_array('USER', $roles)) {
+                 // Utilisateur a le rôle USER
+                 $_SESSION['auth'] = $user;
+                 $_SESSION['flash']['success'] = 'Vous êtes maintenant connecté en tant qu\'utilisateur';
+                header('Location: vueProfil/profil.php'); 
+                exit();
+                // $_SESSION['flash']['danger'] = "vous n'avez pas les droits d'accés";
+                // header("Refresh:0"); 
+            }else { 
+            // Utilisateur sans rôle approprié
+            $_SESSION['flash']['danger'] = 'Vous n\'avez pas les droits d\'accès'; 
+            header('Refresh:0');
+            exit();
+            }
+        }else{
+            $_SESSION['flash']['danger'] = 'Identifiant ou mot de passe incorrecte';
     }
 }
+
+}
+
+
+
+

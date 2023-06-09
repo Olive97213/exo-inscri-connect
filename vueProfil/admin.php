@@ -33,7 +33,7 @@ logged_only();
     include 'menu.php'
     ?>
     <div class="container-fluid position-relative">
-        <img src="../assets/images/dracaufeu.jpg" alt="combat pokemon pikachu sacha contre miaous" class="img-fluid w-100">
+        <img src="../assets/images/dracaufeu.jpg" alt="pokemon dracaufeu" class="img-fluid w-100">
         <h1 class="d-block position-absolute top-50 start-50 translate-middle p-5 border border-5 bg-light">Bonjour, administrateur <?= $_SESSION['auth']->name; ?></h1>
     </div>
 </body>
